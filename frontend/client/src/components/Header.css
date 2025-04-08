@@ -1,0 +1,13 @@
+.header {
+    width: 100%;
+    background-color: #1976d2;
+}
+
+.header-link {
+    list-style: none;
+    width: 140px;
+    height: 100%;
+    line-height: 80px;
+    cursor: pointer;
+    color: #ffffff;
+}

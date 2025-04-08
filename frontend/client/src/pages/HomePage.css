@@ -1,0 +1,35 @@
+.app {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+  
+.main-content {
+    flex: 1;
+    padding: 20px;
+}
+
+.home-page {
+    text-align: center;
+    padding: 20px;
+}
+  
+.home-nav {
+    margin-top: 30px;
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+}
+  
+.nav-link {
+    padding: 10px 20px;
+    background-color: #f0f0f0;
+    border-radius: 5px;
+    text-decoration: none;
+    color: #333;
+    transition: background-color 0.3s;
+}
+  
+.nav-link:hover {
+    background-color: #ddd;
+}
