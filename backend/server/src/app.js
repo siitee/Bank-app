@@ -1,3 +1,4 @@
+// import express from 'express';
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -6,10 +7,17 @@ import morgan from 'morgan';
 import fs from 'fs';
 import { collectDefaultMetrics, Registry, Counter } from 'prom-client';
 import mongoose from 'mongoose';
+import helmet from 'helmet'; // Добавлен helmet для безопасности
 
 dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Подключение helmet с настройками для SEO
+app.use(helmet({
+  contentSecurityPolicy: false, // Можно настроить отдельно
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
+}));
 
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/bank-metrics')
   .then(() => console.log('Connected to MongoDB'))
@@ -50,6 +58,46 @@ app.use(morgan('dev'));
 
 app.use(cors());
 app.use(express.json());
+
+// Добавляем кэширование статики для SEO
+app.use((req, res, next) => {
+  res.set('Cache-Control', 'public, max-age=86400');
+  next();
+});
+
+// Генерация sitemap.xml
+app.get('/sitemap.xml', (req, res) => {
+  const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+  <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+      <loc>${process.env.FRONTEND_URL || 'http://localhost:3000'}/</loc>
+      <lastmod>${new Date().toISOString()}</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>1.0</priority>
+    </url>
+    <url>
+      <loc>${process.env.FRONTEND_URL || 'http://localhost:3000'}/credits</loc>
+      <lastmod>${new Date().toISOString()}</lastmod>
+      <priority>0.8</priority>
+    </url>
+    <url>
+      <loc>${process.env.FRONTEND_URL || 'http://localhost:3000'}/deposits</loc>
+      <lastmod>${new Date().toISOString()}</lastmod>
+      <priority>0.8</priority>
+    </url>
+  </urlset>`;
+
+  res.header('Content-Type', 'application/xml');
+  res.send(sitemap);
+});
+
+// Редиректы для SEO
+app.use((req, res, next) => {
+  if (req.headers.host.startsWith('www.')) {
+    return res.redirect(301, `https://${req.headers.host.replace('www.', '')}${req.url}`);
+  }
+  next();
+});
 
 app.get('/metrics', async (req, res) => {
   try {
@@ -113,8 +161,25 @@ app.get('/api/analytics', async (req, res) => {
 
 app.use('/api', emailRouter);
 
+// Обновленный корневой маршрут с базовой SEO-информацией
 app.get('/', (req, res) => {
-  res.send('Bank Calculator API is running');
+  res.set('Content-Type', 'text/html');
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="ru">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Bank Calculator API</title>
+      <meta name="description" content="API для банковского калькулятора кредитов и вкладов">
+      <link rel="canonical" href="${process.env.FRONTEND_URL || 'http://localhost:3000'}">
+    </head>
+    <body>
+      <h1>Bank Calculator API is running</h1>
+      <p>Документация API доступна по <a href="/api">ссылке</a></p>
+    </body>
+    </html>
+  `);
 });
 
 app.listen(PORT, () => {
